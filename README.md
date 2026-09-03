@@ -8,7 +8,6 @@ precipitation and NDVI data, with an applied outlook for the 2026 El Niño event
 ## Contents
 - `El_Nino_India_SriLanka_Monsoon.ipynb` — full analysis notebook
 - `main.tex` / `refs.bib` — LaTeX report source
-- `figures/` — generated figures
 - `MISTAKES_AND_FIXES.md` — development log of issues encountered and resolved
 
 ## Key finding

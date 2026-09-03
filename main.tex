@@ -1,0 +1,591 @@
+% ==========================================================
+% Term Project Report
+% ==========================================================
+
+\documentclass{article}
+\usepackage{spconf,amsmath,graphicx,hyperref}
+
+% -------------------------
+% Additional useful packages
+% -------------------------
+\usepackage{booktabs}
+\usepackage{siunitx}
+\usepackage{enumitem}
+\usepackage{stfloats}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, positioning}
+
+% -------------------------
+% Custom definitions
+% -------------------------
+\def\x{{\mathbf x}}
+\def\L{{\cal L}}
+
+% -------------------------
+% Title and Author Info
+% -------------------------
+\title{Influence of ENSO in Indian and Sri Lankan Monsoon Rainfall}
+
+\name{Abilaash Vijeyakumaran (Roll Number: 23035010628)} % TODO: fill in your name and roll number
+
+\address{
+Term Project Report - III\\
+Trimester 9\\[0.5em]
+B.Sc. (Honours) Data Science and Artificial Intelligence\\
+Indian Institute of Technology Guwahati, India\\
+\texttt{v.abilaash@op.iitg.ac.in} % TODO: fill in your email
+}
+
+
+\begin{document}
+\ninept
+\maketitle
+
+% ==========================================================
+% Abstract
+% ==========================================================
+\begin{abstract}
+This study looks at how the El Ni\~{n}o-Southern Oscillation (ENSO) affected rainfall across
+Sri Lanka and India from 1996 to 2025. It then applies the findings to the ongoing
+El Ni\~{n}o event in 2026. Rather than being restricted to a single presumed monsoon season,
+four zones such as, India Wet (Western Ghats), India Dry (Deccan), Sri Lanka Wet (South West),
+and Sri Lanka Dry (North East), were analyzed independently using the Oceanic Ni\~{n}o Index
+(ONI) and gridded CHIRPS precipitation. Correlation was examined at monthly resolution
+throughout the entire annual cycle. This monthly-resolved analysis shows that both countries
+have real, statistically significant ENSO sensitivity, but it is concentrated in discrete,
+physically separate times. India's signal is strongest in August--October
+(Dry zone August:$r=-0.562$, $p=0.001$); Sri Lanka shows a strong positive (wetter) signal
+in October ($r=+0.594$, $p=0.0005$, the strongest single correlation in this study) followed
+by a significant drying signal spanning February--April ($r=-0.37$ to $-0.51$ across zones and months).
+The monthly decomposition reveals that the previous JJAS-only analysis's conclusion that
+Sri Lanka had no ENSO sensitivity was an artifact of testing the incorrect season rather
+than a lack of a true link. Applying these relationships to the current event -- an
+El Ni\~{n}o Advisory as of August 2026, with Ni\~{n}o~3.4 forecast to reach $+3.4^{\circ}$C
+by October and a 97\% chance of persistence through early spring 2027 -- projects
+a substantially below-normal remainder of India's 2026 monsoon (most acute in August, 
+$-3.5$ to $-4.2$~mm/day), an anomalously wet October 2026 for Sri Lanka ($+3$ to $+8$~mm/day,
+conservatively capped at the historical maximum observed ONI to avoid extrapolation
+beyond the historical record), and a multi-month drought risk for Sri Lanka spanning
+February--April 2027 ($-1.5$ to $-4.1$~mm/day). These projections are broadly consistent
+with, and provide historical statistical grounding for, public advisories issued by both
+governments regarding this event.
+\end{abstract}
+
+% ==========================================================
+% Keywords
+% ==========================================================
+\begin{keywords}
+El Ni\~{n}o, ENSO, Oceanic Ni\~{n}o Index, Indian Monsoon, CHIRPS, Precipitation Variability
+\end{keywords}
+
+% ==========================================================
+\section{Introduction}
+% ==========================================================
+
+The El Ni\~{n}o-Southern Oscillation (ENSO) is the dominant mode of interannual climate
+variability on Earth, arising from coupled ocean-atmosphere interactions in the
+equatorial Pacific. Its warm phase, El Ni\~{n}o, and cool phase, La Ni\~{n}a, are known
+to influence weather patterns far beyond the Pacific basin through atmospheric
+teleconnections. Among these, the relationship between ENSO and the South Asian summer
+monsoon is one of the most extensively studied, given the monsoon's central importance
+to agriculture, water resources, and the economies of India and Sri Lanka.
+
+Understanding how strongly, and under what conditions, ENSO modulates monsoon rainfall
+is important both for seasonal forecasting and for anticipating drought or flood risk
+in the region. While the broad relationship (El Ni\~{n}o tends to suppress monsoon
+rainfall) is well established in the climate literature, the strength of this
+relationship can vary considerably by sub-region, depending on local topography and
+rainfall regime.
+
+This project quantifies the ENSO--monsoon relationship over India and Sri Lanka for the
+period 1996--2025, using the Oceanic Ni\~{n}o Index (ONI) as the ENSO indicator and
+gridded CHIRPS precipitation data as the rainfall record. The region is split into a
+wet zone (Western Ghats) and a dry, rain-shadow zone (Deccan Plateau) to test whether
+the strength of the relationship differs between areas with strong orographic rainfall
+and areas more directly dependent on large-scale monsoon circulation.
+
+Section~2 describes the problem formulation and objectives. Section~3 details the
+methodology, including data sources and event-detection approach. Experimental results
+are presented in Section~4, followed by discussion and conclusions in Sections~5
+and~6.
+
+% ==========================================================
+\section{Problem Statement and Objectives}
+% ==========================================================
+
+\subsection{Problem Statement}
+El Ni\~{n}o events are known to influence global weather patterns, but the strength and
+consistency of this influence over the Indian/Sri Lankan monsoon region, and whether
+it varies between the two countries and between wetter and drier sub-regions within
+each, requires direct quantitative verification against observational data rather than
+being assumed from the general literature alone. This project addresses two related
+questions: \emph{does the Oceanic Ni\~{n}o Index show a statistically significant
+relationship with monsoon-season rainfall over India and Sri Lanka between 1996 and
+2025, and does the strength of this relationship differ (i) between India and Sri
+Lanka, and (ii) between a wet and dry zone within each country?}
+
+\subsection{Objectives}
+\begin{enumerate}[noitemsep]
+    \item To identify and classify El Ni\~{n}o, La Ni\~{n}a, and Neutral periods over
+    1996--2025 using the Oceanic Ni\~{n}o Index (ONI).
+    \item To obtain and process gridded precipitation data (CHIRPS) over India and Sri
+    Lanka, and to define four representative sub-regions: a wet and dry zone within
+    each country, kept separate rather than merged, so that national-level differences
+    can be examined alongside zonal ones.
+    \item To quantify the correlation between ONI and monsoon-season (JJAS) rainfall
+    anomalies in each of the four zones, including statistical significance testing.
+    \item To compare mean rainfall anomalies across ENSO phases (El Ni\~{n}o, La
+    Ni\~{n}a, Neutral) using analysis of variance (ANOVA), for each zone.
+    \item To determine whether India or Sri Lanka shows stronger ENSO sensitivity, and
+    to interpret the physical basis for any observed difference.
+\end{enumerate}
+
+% ==========================================================
+\section{Methodology / Approach}
+% ==========================================================
+
+This analysis was adapted from a group project originally conducted for Madagascar,
+which examined the relationship between ENSO, precipitation, and vegetation (NDVI) over
+the Southwest Indian Ocean region. The same overall pipeline -- ONI-based event
+detection, gridded precipitation retrieval, zonal clipping, and phase-stratified
+correlation analysis -- was re-applied to the India/Sri Lanka monsoon region as an
+independent extension, given the well-documented and physically distinct
+ENSO--monsoon teleconnection in this region.
+
+\subsection{Overall Workflow}
+The workflow proceeds in four stages: (1) ONI data acquisition and El Ni\~{n}o event
+classification, (2) definition of the India/Sri Lanka study region and its four
+sub-zones, (3) retrieval and spatial clipping of CHIRPS precipitation data, and (4)
+statistical analysis relating ONI to zonal rainfall anomalies.
+
+\subsection{Technical Details}
+
+\textbf{ENSO classification.} The Oceanic Ni\~{n}o Index (ONI)~\cite{noaa_oni}, a
+3-month running mean of sea surface temperature anomalies in the Ni\~{n}o~3.4 region,
+was obtained from NOAA's Climate Prediction Center for 1996--2025. Following NOAA's operational
+definition, a period was classified as an El Ni\~{n}o (La Ni\~{n}a) event when ONI
+remained at or above $+0.5^{\circ}$C (at or below $-0.5^{\circ}$C) for at least five
+consecutive overlapping 3-month seasons; all other periods were classified as Neutral.
+
+\textbf{Precipitation data.} Daily gridded precipitation at $0.25^{\circ}$ resolution
+was obtained from the CHIRPS v2.0 dataset~\cite{funk2015chirps} (Climate Hazards Group,
+UC Santa Barbara) for 1996--2025 and clipped to the India and Sri Lanka national
+boundaries (Natural Earth administrative boundaries~\cite{naturalearth}).
+
+\textbf{Zone definition.} Four sub-regions were defined to represent contrasting
+rainfall regimes within each country, kept separate rather than merged across
+countries: an \emph{India wet zone} covering the Western Ghats and Kerala coastal belt,
+an \emph{India dry zone} covering the Deccan Plateau rain-shadow region, a \emph{Sri
+Lanka wet zone} covering the southwest of the island, and a \emph{Sri Lanka dry zone}
+covering the north, east, and southeast of the island. Each zone was clipped to its
+respective country's national boundary independently, rather than to a combined
+India--Sri Lanka boundary, so that country-level comparisons would not be confounded by
+cross-border averaging.
+
+\textbf{Statistical analysis.} Monthly rainfall anomalies were computed relative to
+each month's 1996--2025 climatology for both zones. Pearson correlation coefficients
+between ONI and rainfall anomaly were computed (i) across all months and (ii)
+restricted to the monsoon season (June--September, JJAS), since the ENSO--monsoon
+teleconnection is expected to be strongest during this period. One-way ANOVA was used
+to test whether mean JJAS rainfall anomalies differed significantly across the three
+ENSO phases (El Ni\~{n}o, La Ni\~{n}a, Neutral).
+
+\subsection{Mathematical Formulation}
+
+\textbf{ONI and rainfall anomaly.} ONI is the 3-month running mean of sea surface
+temperature anomaly in the Ni\~{n}o~3.4 region relative to a 1991--2020 climatology,
+classified as El Ni\~{n}o ($\geq+0.5^{\circ}$C) or La Ni\~{n}a ($\leq-0.5^{\circ}$C) for
+at least 5 consecutive overlapping seasons, and Neutral otherwise. For each zone, the
+rainfall anomaly $A_t = P_t - \bar{P}_{c(t)}$, where $P_t$ is zone-averaged monthly
+precipitation and $\bar{P}_{c(t)}$ is the climatological mean for calendar month $c(t)$.
+
+\textbf{Pearson correlation.} The linear ONI--rainfall relationship is quantified by
+\begin{equation}
+r = \frac{\sum_i (x_i - \bar{x})(y_i - \bar{y})}
+{\sqrt{\sum_i (x_i - \bar{x})^2}\sqrt{\sum_i (y_i - \bar{y})^2}}
+\end{equation}
+with $x_i=\text{ONI}_i$, $y_i=A_i$; significance assessed via a two-sided $t$-test with
+$n-2$ degrees of freedom.
+
+\textbf{Linear regression.} To translate a given ONI value into a projected rainfall
+anomaly (used for the current-event outlook in
+Section~\ref{sec:current_outlook}), an ordinary least-squares regression is fit for
+each zone and month/season of interest:
+\begin{equation}
+\hat{A} = \beta_1 \cdot \text{ONI} + \beta_0
+\end{equation}
+where the slope and intercept minimize the sum of squared residuals,
+\begin{equation}
+\beta_1 = \frac{\sum_i (x_i-\bar{x})(y_i-\bar{y})}{\sum_i (x_i-\bar{x})^2}, \qquad
+\beta_0 = \bar{y} - \beta_1 \bar{x}
+\end{equation}
+again with $x_i=\text{ONI}_i$ and $y_i=A_i$ restricted to the relevant month(s).
+Predictions made at an input ONI value outside the range of $x_i$ used to fit the
+model constitute extrapolation rather than interpolation, and are flagged as such
+wherever they occur in this report (Section~\ref{sec:current_outlook}).
+
+\textbf{One-way ANOVA.} To test whether mean anomaly differs across phases $k \in
+\{\text{El Ni\~{n}o}, \text{La Ni\~{n}a}, \text{Neutral}\}$:
+\begin{equation}
+F = \frac{\sum_k n_k(\bar{A}_k - \bar{A})^2 \,/\, (K-1)}
+{\sum_k \sum_{i \in k} (A_i - \bar{A}_k)^2 \,/\, (N-K)}
+\end{equation}
+where $\bar{A}_k$, $n_k$ are the mean and count in phase $k$, $\bar{A}$ the overall
+mean, $K=3$, and $N$ the total sample size. A large $F$ indicates phase means differ
+more than expected from within-phase variability alone.
+
+% ==========================================================
+\section{Experiments and Results}
+% ==========================================================
+
+\subsection{Experimental Setup}
+The analysis used ONI data from NOAA CPC (1996--2025, monthly/ seasonal resolution) and
+CHIRPS v2.0 daily precipitation data ($0.25^{\circ}$ resolution, aggregated to monthly
+means) over the same period. All processing was performed in Python using
+\texttt{xarray}, \texttt{rioxarray}, \texttt{geopandas}, and \texttt{scipy.stats}.
+Statistical significance was assessed at the conventional $p<0.05$ threshold, with
+$p<0.01$ and $p<0.001$ noted where applicable.
+
+\subsection{Results}
+
+Figure~\ref{fig:zones_map} shows the India/Sri Lanka study region with all four zones
+delineated, kept separate by country. Prior to this national decomposition, the
+whole-region (combined) same-month correlation was weak and non-significant
+($r=-0.039$, $p=0.4625$), motivating the split presented below.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\linewidth]{figures/zones_map.png}
+    \caption{The four zones used in this analysis: India Wet (Western Ghats) and India
+    Dry (Deccan Plateau), each clipped to India's boundary; and Sri Lanka Wet (southwest)
+    and Sri Lanka Dry (north/east), each clipped to Sri Lanka's boundary independently.}
+    \label{fig:zones_map}
+\end{figure}
+
+\subsubsection{Monthly-Resolved ENSO Sensitivity}
+\label{sec:monthly}
+
+An initial analysis restricted to the June--September (JJAS) monsoon season -- the
+convention typically used for the Indian monsoon -- found strong ENSO sensitivity in
+both Indian zones but none in either Sri Lankan zone. Since Sri Lanka's own monsoon
+cycle (Yala/Maha) does not align with India's, this JJAS-only test was re-run at
+monthly resolution across the full annual cycle for all four zones, testing the
+ONI--rainfall anomaly correlation independently for each of the 12 calendar months
+(Figure~\ref{fig:monthly_heatmap}).
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\linewidth]{figures/monthly_sensitivity_heatmap.png}
+    \caption{Pearson correlation between ONI and rainfall anomaly, by calendar month
+    and zone (1996--2025). Significance: * $p<0.05$, ** $p<0.01$, *** $p<0.001$.}
+    \label{fig:monthly_heatmap}
+\end{figure}
+
+This reveals that Sri Lanka does have real ENSO sensitivity -- the JJAS-only result
+was an artifact of testing the wrong season, not evidence of no relationship.
+Table~\ref{tab:monthly_highlights} summarizes the strongest windows found for each
+country.
+
+\begin{table}[h]
+\centering
+\caption{Strongest monthly ENSO--rainfall correlations by country/zone.}
+\label{tab:monthly_highlights}
+\begin{tabular}{llcc}
+\toprule
+Country & Window & Zone & $r$ ($p$) \\
+\midrule
+India & Aug & Dry & $-0.562$ ($p{=}0.001$) \\
+India & Aug & Wet & $-0.479$ ($p{=}0.007$) \\
+India & Jul--Oct & both & $-0.36$ to $-0.56$, all sig. \\
+Sri Lanka & Oct & Wet & $+0.594$ ($p{=}0.0005$) \\
+Sri Lanka & Feb & Wet & $-0.507$ ($p{=}0.004$) \\
+Sri Lanka & Feb--Apr & both & $-0.37$ to $-0.51$, all sig. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Notably, India's own signal is not uniform across JJAS: June and July are individually
+weak and non-significant ($r\approx-0.27$, $p\approx0.14$ in both zones), with the
+pooled JJAS result driven mainly by August--October. With 48 individual month--zone
+tests conducted, 2--3 significant results would be expected by chance alone at
+$p<0.05$; the strongest findings above ($p<0.001$ for India August and Sri Lanka
+October) are far too strong to be attributable to this, while single-star results
+($p\approx0.02$--$0.05$) warrant more caution.
+
+Figure~\ref{fig:india_srilanka_timeseries} shows ONI alongside country-averaged
+rainfall for India and Sri Lanka.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\linewidth]{figures/india_srilanka_timeseries.png}
+    \caption{ONI (6-month smoothed, top panel) alongside country-averaged rainfall for
+    India and Sri Lanka separately (6-month smoothed, bottom panel), 1996--2025, with El
+    Ni\~{n}o event periods shaded in red. Prior to this national decomposition, the
+    same-month correlation using a single whole-region (India+Sri Lanka combined)
+    average was weak and non-significant ($r=-0.039$, $p=0.4625$), motivating the
+    split presented here.}
+    \label{fig:india_srilanka_timeseries}
+\end{figure}
+
+Table~\ref{tab:correlations} presents the original JJAS-restricted correlation test --
+the initial analysis before the monthly decomposition above was performed. Both Indian
+zones show a strong, highly significant negative correlation; neither Sri Lankan zone
+reaches significance under this India-centric season definition, which (as
+Section~\ref{sec:monthly} shows) reflects the choice of season rather than an absence
+of Sri Lankan ENSO sensitivity.
+
+\begin{table}[h]
+\centering
+\caption{Pearson correlation between ONI and rainfall anomaly, by country, zone, and
+season.}
+\label{tab:correlations}
+\begin{tabular}{llccc}
+\toprule
+Country & Zone & Period & $r$ & $p$ \\
+\midrule
+India & Wet (Ghats) & All months & $-0.208$ & $0.0001$ \\
+India & Wet (Ghats) & JJAS only  & $-0.408$ & $<0.0001$ \\
+India & Dry (Deccan) & All months & $-0.219$ & $<0.0001$ \\
+India & Dry (Deccan) & JJAS only  & $-0.392$ & $<0.0001$ \\
+Sri Lanka & Wet (SW) & All months & $+0.077$ & $0.1424$ \\
+Sri Lanka & Wet (SW) & JJAS only  & $+0.092$ & $0.3166$ \\
+Sri Lanka & Dry (N/E) & All months & $-0.008$ & $0.8735$ \\
+Sri Lanka & Dry (N/E) & JJAS only  & $-0.104$ & $0.2593$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:anova} presents the ANOVA results and mean JJAS rainfall anomalies by
+ENSO phase for all four zones. Both Indian zones show a highly significant phase effect
+($p<0.001$); neither Sri Lankan zone does ($p>0.6$ in both cases).
+
+\begin{table}[h]
+\centering
+\caption{Mean JJAS rainfall anomaly (mm/day) by ENSO phase, and one-way ANOVA results,
+by country and zone.}
+\label{tab:anova}
+\begin{tabular}{llccc}
+\toprule
+Country & Zone & El Ni\~{n}o & La Ni\~{n}a & Neutral \\
+\midrule
+India & Wet (Ghats) & $-1.21$ & $+0.72$ & $+0.10$ \\
+India & Dry (Deccan) & $-1.23$ & $+0.88$ & $+0.03$ \\
+Sri Lanka & Wet (SW) & $+0.52$ & $-0.23$ & $-0.08$ \\
+Sri Lanka & Dry (N/E) & $-0.06$ & $+0.18$ & $-0.06$ \\
+\bottomrule
+\end{tabular}
+\vspace{0.3em}
+
+\begin{tabular}{llcc}
+\toprule
+Country & Zone & $F$ & $p$ \\
+\midrule
+India & Wet (Ghats) & $8.640$ & $0.0003$ \\
+India & Dry (Deccan) & $8.484$ & $0.0004$ \\
+Sri Lanka & Wet (SW) & $0.296$ & $0.7445$ \\
+Sri Lanka & Dry (N/E) & $0.415$ & $0.6614$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+An additional correlation analysis between rainfall and vegetation
+(NDVI)~\cite{vermote2019ndvi} anomalies, stratified by zone and ENSO phase (1-month
+lag), is presented in Table~\ref{tab:ndvi}. In
+this analysis, both Sri Lankan zones show moderate negative correlations under La
+Ni\~{n}a (SW: $r=-0.26$; N/E: $r=-0.24$), while the India Wet zone shows the strongest
+positive correlations of any zone under El Ni\~{n}o and La Ni\~{n}a alike ($r=+0.14$ and
+$r=+0.16$ respectively); notably, none of these NDVI correlations reach the
+$p<0.05$ threshold used elsewhere in this analysis, so they are reported as suggestive
+patterns rather than confirmed relationships.
+
+\begin{table}[h]
+\centering
+\caption{Rainfall--NDVI anomaly correlation (1-month lag), by country, zone, and ENSO
+phase.}
+\label{tab:ndvi}
+\begin{tabular}{llcc}
+\toprule
+Zone & Phase & $r$ & $p$ \\
+\midrule
+India Dry (Deccan) & El Ni\~{n}o & $-0.10$ & -- \\
+India Dry (Deccan) & La Ni\~{n}a & $+0.11$ & -- \\
+India Dry (Deccan) & Neutral      & $+0.02$ & -- \\
+India Wet (Ghats)  & El Ni\~{n}o & $+0.14$ & -- \\
+India Wet (Ghats)  & La Ni\~{n}a & $+0.16$ & -- \\
+India Wet (Ghats)  & Neutral      & $-0.02$ & -- \\
+Sri Lanka Dry (N/E) & El Ni\~{n}o & $+0.01$ & -- \\
+Sri Lanka Dry (N/E) & La Ni\~{n}a & $-0.24$ & -- \\
+Sri Lanka Dry (N/E) & Neutral      & $-0.10$ & -- \\
+Sri Lanka Wet (SW)  & El Ni\~{n}o & $-0.31$ & -- \\
+Sri Lanka Wet (SW)  & La Ni\~{n}a & $-0.26$ & -- \\
+Sri Lanka Wet (SW)  & Neutral      & $-0.12$ & -- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ==========================================================
+\section{Discussion}
+% ==========================================================
+
+The central finding of this analysis is a clear asymmetry between India and Sri Lanka:
+both Indian zones show a strong, highly significant, and physically consistent
+ENSO--rainfall relationship, while neither Sri Lankan zone shows a statistically
+significant relationship at all. This was not the expected outcome going in --
+the two countries share the same broad monsoon system and are geographically close --
+and it emerged only once the analysis moved from a single combined India+Sri Lanka
+region to four independently-clipped, country-specific zones. Notably, the same-month
+correlation using the whole-region average, prior to any decomposition, was weak and
+non-significant ($r=-0.039$, $p=0.4625$); it
+is only once the region is split by country and zone, and restricted to the monsoon
+season, that the strong Indian signal becomes visible -- underscoring how easily a
+real, strong relationship in one part of a region can be masked by averaging it
+together with a part of the region where no such relationship exists.
+
+\textbf{India.} Both Indian zones show a strong, highly significant negative
+correlation between ONI and JJAS rainfall (Western Ghats: $r=-0.408$, $p<0.0001$;
+Deccan: $r=-0.392$, $p<0.0001$), and both show a highly significant ANOVA across ENSO
+phases ($F=8.640$, $p=0.0003$ and $F=8.484$, $p=0.0004$ respectively). The swing
+between El Ni\~{n}o and La Ni\~{n}a years is substantial and nearly identical in both
+zones ($\sim$1.9--2.1~mm/day), consistent with the well-documented finding that El
+Ni\~{n}o suppresses the Indian summer monsoon. Notably, the wet and dry Indian zones
+show very similar correlation strength once Sri Lanka is removed from the averaging --
+suggesting the "dry zone is more sensitive" pattern seen in an earlier, combined-country
+version of this analysis was partly an artifact of Sri Lanka diluting the wet-zone
+signal, rather than a genuine India-internal topographic effect.
+
+\textbf{Sri Lanka.} Neither Sri Lankan zone shows a statistically significant
+relationship with ONI in any test ($p>0.6$ for both ANOVAs). The Sri Lanka wet zone's
+correlation is even \emph{positive} ($r=+0.092$), opposite in sign to every Indian
+zone, though not statistically distinguishable from zero. A plausible explanation is
+that Sri Lanka, as a small island, is more strongly influenced by local-scale processes
+-- land-sea breeze, its own central highlands, and dual exposure to both the southwest
+and northeast monsoons -- than by the large-scale circulation shift that governs
+India's response to ENSO; its smaller zones and fewer CHIRPS grid cells may also make
+the signal noisier.
+
+The seasonal trend analysis (JJA and DJF, all four zones) shows a modest positive
+JJA trend across all four zones (India Wet: $+0.019$; India Dry: $+0.035$; Sri Lanka
+Wet: $+0.051$; Sri Lanka Dry: $+0.021$~mm/day/yr) -- notably strongest in Sri Lanka's
+wet zone despite its lack of ENSO sensitivity, suggesting this trend is driven by
+factors other than ENSO. The DJF trend is flat to slightly negative in all zones.
+
+The rainfall--NDVI correlation results (Table~\ref{tab:ndvi}) show a suggestive but
+statistically unconfirmed pattern -- both Sri Lankan zones show moderate negative
+correlations under La Ni\~{n}a, while India Wet shows moderate positive correlations
+under both El Ni\~{n}o and La Ni\~{n}a -- but none reach significance, so these should
+be treated as directions for future work rather than confirmed findings.
+
+\textbf{Current Event Outlook (2026--27).}
+\label{sec:current_outlook}
+Since this historical analysis was
+completed, ENSO conditions have shifted dramatically: NOAA CPC's ENSO Diagnostic
+Discussion (3 August 2026)~\cite{cpc_ensodisc_aug2026} confirms an El Ni\~{n}o
+Advisory, with the weekly Ni\~{n}o~3.4 index at $+2.3^{\circ}$C, forecast to reach
+$+2.7^{\circ}$C (Aug), $+3.1^{\circ}$C (Sep), and $+3.4^{\circ}$C (Oct), and a 97\%
+chance of persistence through early spring 2027. Applying the month-specific
+regressions from Section~\ref{sec:monthly} to this trajectory:
+
+\emph{India, remainder of 2026 monsoon.} Using NOAA's forecast ONI values directly
+(within or near the regressions' observed range): August $-3.5$ to $-4.2$~mm/day,
+September $-2.4$ to $-2.5$~mm/day, October $-2.1$~mm/day (both zones) -- a sharp
+deficit early, gradually easing.
+
+\emph{Sri Lanka, October 2026.} The forecast ONI ($+3.4$) exceeds any value observed
+in the 1996--2025 record for this zone's regression (max observed: $2.28$); the naive
+linear extrapolation ($+11.8$~mm/day, wet zone) is not considered credible. Capping the
+input at the historically observed maximum gives a more defensible estimate of
+$+7.9$~mm/day (wet zone) and $+3.0$~mm/day (dry zone) -- still a substantial positive
+anomaly, consistent in direction and statistical strength ($r=+0.594$, $p=0.0005$)
+with the strongest correlation found anywhere in this study, but with the true
+magnitude genuinely uncertain given the event's unprecedented forecast strength.
+
+\emph{Sri Lanka, February--April 2027.} Using the 1997--98 and 2015--16 events' actual
+ONI trajectory at equivalent lead time as a historical analog (peak $\sim$2.4, well
+within the regressions' observed range, so no capping needed): February $-2.6$ to
+$-2.7$~mm/day, March $-2.4$ to $-4.1$~mm/day, April $-1.5$ to $-2.8$~mm/day across
+zones -- a sustained, multi-month drought signal.
+
+\textbf{Relevance to public advisories.} Sri Lankan government communications
+regarding this event have suggested elevated rainfall around November 2026 followed by
+drought conditions by February 2027. This analysis is broadly consistent with that
+outlook, though the statistical signal is strongest and most confident one month
+earlier than communicated (October rather than November -- November alone did not
+reach significance in this dataset, $p=0.14$, likely due to limited single-month
+sample size rather than absence of a real effect) and the drought signal appears to
+extend beyond February through at least April. For India, this analysis provides
+direct statistical support for expecting a below-normal remainder of the 2026 monsoon,
+most acute in August.
+
+\textbf{Limitations.} The 30-year record (8--9 El Ni\~{n}o events, $n=30$ per
+individual calendar month) limits statistical power, particularly for single-month
+tests. With 48 month--zone combinations tested, some weaker single-star results may
+reflect chance rather than a genuine effect. The October Sri Lanka projection required
+extrapolation beyond the observed ONI range, introducing additional uncertainty. Zone
+boundaries used approximate bounding boxes rather than precise climatological
+zonation, and other known drivers such as the Indian Ocean Dipole were not included.
+
+% ==========================================================
+\section{Conclusion and Future Work}
+% ==========================================================
+
+This project demonstrates that the Oceanic Ni\~{n}o Index is a statistically
+significant and physically consistent predictor of rainfall variability over both
+India and Sri Lanka between 1996 and 2025 -- a conclusion that only emerged after
+moving beyond a single assumed monsoon season to a full monthly-resolved analysis.
+An initial JJAS-only test found strong Indian sensitivity (Western Ghats: $r=-0.408$;
+Deccan: $r=-0.392$, both $p<0.0001$) but no significant Sri Lankan relationship,
+suggesting an asymmetry between the two countries. Decomposing by calendar month
+revealed this was an artifact of testing the wrong season for Sri Lanka, not an
+absence of sensitivity: Sri Lanka shows a strong positive (wetter) signal in October
+($r=+0.594$, $p=0.0005$, the strongest single correlation in this entire study) and a
+significant, multi-month drying signal spanning February--April ($r=-0.37$ to
+$-0.51$). India's own signal, meanwhile, was found to be concentrated in
+August--October rather than uniform across JJAS, with June and July individually
+non-significant.
+
+Applying these relationships to the actively-developing 2026 El Ni\~{n}o event
+(confirmed El Ni\~{n}o Advisory as of August 2026, forecast to reach $+3.4^{\circ}$C
+by October) projects a substantially below-normal remainder of India's 2026 monsoon,
+an anomalously wet October 2026 for Sri Lanka, and a multi-month drought risk for Sri
+Lanka spanning February--April 2027 -- projections broadly consistent with, and
+providing historical statistical grounding for, public advisories issued by both
+governments. This progression -- from a combined-region analysis showing no signal,
+to a country-split JJAS analysis showing an apparent India/Sri Lanka asymmetry, to a
+monthly-resolved analysis showing both countries are ENSO-sensitive in their own
+distinct seasons -- illustrates how methodological choices about temporal and spatial
+aggregation can determine whether a real underlying relationship is detected or
+missed entirely.
+
+\textbf{Future Scope.} This work can be extended by: (i) incorporating the Indian
+Ocean Dipole as an additional predictor alongside ONI, particularly relevant given
+Sri Lanka's dual Pacific/Indian Ocean exposure; (ii) building a predictive model
+(e.g., logistic regression or ARIMA) to forecast above/below-normal rainfall by month,
+moving from description toward genuine forecasting; (iii) refining zone boundaries
+using climatological rainfall zonation rather than
+bounding boxes; and (iv) revisiting the October Sri Lanka projection once the
+current event's actual peak intensity is observed, to assess how well the
+capped-extrapolation approach performed against ground truth.
+
+% ==========================================================
+\section{Artifacts and Demonstrations}
+% ==========================================================
+
+\begin{itemize}[noitemsep]
+    \item \textbf{Code Repository:} \url{https://github.com/Abilaash17/enso-india-srilanka-monsoon} % TODO: add your repo link
+    \item \textbf{Video Demo:} \url{https://youtu.be/ImG48W8fgYc} % TODO: update as needed
+\end{itemize}
+
+\textbf{Note:}
+During development, code debugging, documentation editing (grammar refinement and technical clarity), were supported by AI-assisted tools such as Claude (Anthropic). The author's personal effort and knowledge are reflected in all design decisions, implementation choices, data source selections, and written material.
+
+
+% ==========================================================
+% References
+% ==========================================================
+\vfill\pagebreak
+{\fontsize{8}{9}\selectfont
+\bibliographystyle{IEEEbib}
+\bibliography{refs}
+}
+
+\end{document}
